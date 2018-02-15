@@ -79,13 +79,20 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                     _this.data = null;
 
                     _this.panel.maxDataPoints = 1;
-                    _this.panel.types = ['geoJSON', 'timeserie'];
+                    _this.panel.types = ['geoJSON', 'custom'];
                     _this.panel.dataType = _this.panel.dataType || _this.panel.types[0];
+                    _this.panel.latField = _this.panel.latField || null;
+                    _this.panel.lngField = _this.panel.lngField || null;
                     _this.panel.posField = _this.panel.posField || '';
                     _this.panel.dataField = _this.panel.dataField || '';
+                    _this.panel.dataLabel = _this.panel.dataLabel || 'value';
                     _this.panel.tiles = [{ name: 'openstreet', url: '//tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 18 }, { name: 'opentopomap', url: '//{s}.tile.opentopomap.org/{z}/{x}/{y}.png', maxZoom: 17 }, { name: 'opencyclemap', url: '//a.tile3.opencyclemap.org/landscape/{z}/{x}/{y}.png' }];
-                    _this.panel.mapTile = _this.panel.mapTile || _this.panel.tiles[0];
+                    _this.panel.tileList = _this.panel.tiles.map(function (item) {
+                        return item.name;
+                    }, []);
+                    _this.panel.mapTile = _this.panel.mapTile || _this.panel.tileList[0];
                     _this.panel.zoom = _this.panel.zoom || 12;
+                    _this.panel.circle = _this.panel.circle || false;
                     _this.panel.markerColor = _this.panel.markerColor || 'red';
                     var dashboard = _this.dashboard;
 
@@ -116,37 +123,72 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                         var maxLon = 5.4859435558;
 
                         for (var k in data) {
-                            for (var i = 0; i < data[k].datapoints.length; i++) {
-                                var position, properties;
-                                if (this.panel.dataType == "geoJSON") {
-                                    //if (data[k].datapoints[i][0].type && data[k].datapoints[i][0].type=='Feature') {
-                                    // coordinates field of geoJSON
-                                    var dataPoint = data[k].datapoints[i][0];
-                                    if (this.panel.posField) {
-                                        var geo = _.get(dataPoint, this.panel.posField); // lodash _.get(object, path, [defaultValue])
-                                        position = geo.features[0].geometry.coordinates;
-                                        properties = geo.features[0].properties;
-                                    } else {
-                                        position = dataPoint.features[0].geometry.coordinates;
-                                        properties = dataPoint.features[0].properties;
+                            if (data[k].datapoints) {
+                                for (var i = 0; i < data[k].datapoints.length; i++) {
+                                    var position, properties;
+                                    if (this.panel.dataType == "geoJSON") {
+                                        // coordinates field of geoJSON
+                                        var dataPoint = data[k].datapoints[i][0];
+                                        if (this.panel.posField) {
+                                            var geo = _.get(dataPoint, this.panel.posField); // lodash _.get(object, path, [defaultValue])
+                                            position = geo.features[0].geometry.coordinates;
+                                            properties = geo.features[0].properties;
+                                        } else if (dataPoint && dataPoint.features) {
+                                            position = dataPoint.features[0].geometry.coordinates;
+                                            properties = dataPoint.features[0].properties;
+                                        } else if (dataPoint && (dataPoint.latitude || dataPoint.lat)) {
+                                            var lat = dataPoint.latitude || dataPoint.lat;
+                                            var lng = dataPoint.longitude || dataPoint.lng;
+                                            position = { lat: lat, lng: lng };
+                                            properties = {};
+                                        } else {}
+                                        // nothing
+
+                                        // ???
+                                        if (position) {
+                                            position = { lat: position[1], lng: position[0] };
+                                            minLat = Math.min(minLat, position.lat);
+                                            minLon = Math.min(minLon, position.lng);
+                                            maxLat = Math.max(maxLat, position.lat);
+                                            maxLon = Math.max(maxLon, position.lng);
+                                        }
+                                        if (this.panel.dataField) {
+                                            var _value = _.get(dataPoint, this.panel.dataField); // lodash _.get(object, path, [defaultValue])
+                                        } else _value = null;
+                                        this.coords.push({
+                                            value: _value,
+                                            position: position,
+                                            timestamp: data[k].datapoints[i][1],
+                                            properties: properties
+                                        });
+                                    } else if (this.panel.dataType == "custom") {
+                                        var dataPoint = data[k].datapoints[i][0];
+                                        if (this.panel.latField && this.panel.lngField) {
+                                            var lat = _.get(dataPoint, this.panel.latField);
+                                            var lng = _.get(dataPoint, this.panel.lngField);
+                                            position = { lat: lat, lng: lng };
+                                            properties = {};
+                                        } else if (dataPoint && (dataPoint.latitude || dataPoint.lat)) {
+                                            var lat = dataPoint.latitude || dataPoint.lat;
+                                            var lng = dataPoint.longitude || dataPoint.lng;
+                                            position = { lat: lat, lng: lng };
+                                            properties = {};
+                                        } else {
+                                            // nothing
+                                        }
+                                        if (this.panel.dataField) {
+                                            var _value = _.get(dataPoint, this.panel.dataField); // lodash _.get(object, path, [defaultValue])
+                                        } else _value = null;
+                                        this.coords.push({
+                                            value: _value,
+                                            position: position,
+                                            timestamp: data[k].datapoints[i][1],
+                                            properties: properties
+                                        });
                                     }
-                                    if (position && position[0]) {
-                                        position = { lat: position[1], lng: position[0] };
-                                        minLat = Math.min(minLat, position.lat);
-                                        minLon = Math.min(minLon, position.lng);
-                                        maxLat = Math.max(maxLat, position.lat);
-                                        maxLon = Math.max(maxLon, position.lng);
-                                    }
-                                    if (this.panel.dataField) {
-                                        var _value = _.get(dataPoint, this.panel.dataField); // lodash _.get(object, path, [defaultValue])
-                                    } else _value = null;
-                                    this.coords.push({
-                                        value: _value,
-                                        position: position,
-                                        timestamp: data[k].datapoints[i][1],
-                                        properties: properties
-                                    });
                                 }
+                            } else {
+                                console.log("doMap - no datapoint for " + k);
                             }
                         }
 
@@ -184,24 +226,30 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                             }
                         });
 
-                        var layer = L.tileLayer(panel.mapTile.url, {
-                            maxZoom: panel.mapTile.maxZoom
+                        var mapTile = _.find(this.panel.tiles, ['name', this.panel.mapTile]);
+                        var layer = L.tileLayer(mapTile.url, {
+                            maxZoom: mapTile.maxZoom
                         });
                         layer.addTo(this.myMap);
 
                         this.coords.forEach(function (point) {
-                            console.log("point", point);
+                            //console.log("point", point);
                             if (point.position) {
-                                //point.marker = L.circleMarker(point.position, {
-                                point.marker = L.marker(point.position, {
-                                    color: panel.markerColor,
-                                    //stroke: 'false',
-                                    fillColor: 'none',
-                                    fillOpacity: 0.5,
-                                    radius: 10
-                                });
+                                if (_this2.panel.circle) {
+                                    point.marker = L.circleMarker(point.position, {
+                                        color: panel.markerColor,
+                                        //stroke: 'false',
+                                        fillColor: 'none',
+                                        fillOpacity: 0.5,
+                                        radius: 10
+                                    });
+                                } else {
+                                    point.marker = L.marker(point.position, {});
+                                }
                                 point.marker.addTo(_this2.myMap);
-                                var obj = _.merge({ value: point.value }, point.properties);
+                                var obj = { date: moment(point.timestamp) };
+                                obj[_this2.panel.dataLabel] = point.value;
+                                obj = _.merge(obj, point.properties);
                                 point.marker.bindPopup(_this2._toHtml(obj));
                             }
                         });
@@ -216,6 +264,8 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                 html += "<b>" + k + "</b>: ";
                                 if (typeof obj[k] == 'string' && obj[k].indexOf("http") != -1) {
                                     html += "<a href='" + obj[k] + "' target='_blank'>" + obj[k] + "</a>: ";
+                                } else if (moment.isMoment(obj[k])) {
+                                    html += obj[k].format('DD/MM/YYYY hh:mm:ss');
                                 } else {
                                     html += obj[k];
                                 }

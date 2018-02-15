@@ -2,40 +2,67 @@
     <div class="section gf-form-group">
         <h5 class="section-heading">Map options</h5>
         <div class="gf-form">
-            <label class="gf-form-label width-9">Data type</label>
-            <div class="gf-form-select-wrapper max-width-10">
+            <label class="gf-form-label width-12">Data type</label>
+            <div class="gf-form-select-wrapper max-width-12">
                 <select class="input-medium gf-form-input" ng-model="ctrl.panel.dataType" ng-options="ty for ty in ctrl.panel.types" ng-change="ctrl.doMapAndRender()"></select>
             </div>
         </div>
-        <div class="gf-form">
-            <label class="gf-form-label width-9">Position field</label>
-            <input class="gf-form-input" ng-model="ctrl.panel.posField" ng-change="ctrl.doMapAndRender()" />
+        <div class="gf-form" ng-if="ctrl.panel.dataType=='geoJSON'">
+            <label class="gf-form-label width-12">Geo-location field
+                <info-popover mode="right-normal">
+                JSON path which contains geoJSON object (i.e. { "type": "FeatureCollection", "features": [ ... })
+                </info-popover>
+            </label>
+            <input class="gf-form-input width-24" ng-model="ctrl.panel.posField" ng-change="ctrl.doMapAndRender()" />
+        </div>
+        <div class="gf-form" ng-if="ctrl.panel.dataType=='custom'">
+            <label class="gf-form-label width-12">Latitude field
+                <info-popover mode="right-normal">
+                JSON path which contains latitude value
+                </info-popover>
+            </label>
+            <input class="gf-form-input width-24" ng-model="ctrl.panel.latField" ng-change="ctrl.doMapAndRender()" />
+            <label class="gf-form-label width-12">Longitude field
+                <info-popover mode="right-normal">
+                JSON path which contains longitude value
+                </info-popover>
+            </label>
+            <input class="gf-form-input width-24" ng-model="ctrl.panel.lngField" ng-change="ctrl.doMapAndRender()" />
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-9">Data field</label>
-            <input class="gf-form-input" ng-model="ctrl.panel.dataField" ng-change="ctrl.doMapAndRender()" />
+            <label class="gf-form-label width-12">Data field
+                <info-popover mode="right-normal">
+                JSON path which contains data value
+                </info-popover>
+            </label>
+            <input class="gf-form-input width-24" ng-model="ctrl.panel.dataField" ng-change="ctrl.doMapAndRender()" />
+            <label class="gf-form-label width-12">Data label
+            </label>
+            <input class="gf-form-input width-24" ng-model="ctrl.panel.dataLabel" ng-change="ctrl.doMapAndRender()" />
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-9">Map tile</label>
-            <div class="gf-form-select-wrapper max-width-10">
-                <select class="input-medium gf-form-input" ng-model="ctrl.panel.mapTile" ng-options="t.name for t in ctrl.panel.tiles" ng-change="ctrl.doMapAndRender()"></select>
+            <label class="gf-form-label width-12">Map tile</label>
+            <div class="gf-form-select-wrapper max-width-12">
+                <select class="input-medium gf-form-input" ng-model="ctrl.panel.mapTile" ng-options="t for t in ctrl.panel.tileList" ng-change="ctrl.doMapAndRender()"></select>
             </div>
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-9">Map Zoom</label>
-            <span class="max-width-10">
+            <label class="gf-form-label width-12">Map Zoom</label>
+            <span class="max-width-12">
                 <input class="gf-form-input" ng-model="ctrl.panel.zoom" ng-change="ctrl.doMapAndRender()" />
             </span>
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-9">Markers Color</label>
-            <span class="max-width-10">
+            <label class="gf-form-label width-12">Circle/marker</label>
+            <gf-form-switch class="gf-form" title="Circle/marker" checked="ctrl.panel.circle"></gf-form-switch>
+            <label ng-if="ctrl.panel.circle" class="gf-form-label width-12">Circle Color</label>
+            <span ng-if="ctrl.panel.circle" class="max-width-12">
                 <spectrum-picker class="gf-form-input" ng-model="ctrl.panel.markerColor" ng-change="ctrl.doMapAndRender()" ></spectrum-picker>
             </span>
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-9">Bg Color</label>
-            <span class="max-width-10">
+            <label class="gf-form-label width-12">Bg Color</label>
+            <span class="max-width-12">
                 <spectrum-picker class="gf-form-input" ng-model="ctrl.panel.bgColor" ng-change="ctrl.render()" ></spectrum-picker>
             </span>
         </div>
