@@ -4,3 +4,18 @@
   justify-content: center;
   flex-direction: column;
 }
+
+iframe.link-panel {
+    border: solid 1px #dddddd;
+}
+
+.map-panel hr {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.map-panel .map-container {
+    height: 100%;
+    width:100%;
+    z-index: 1;
+}

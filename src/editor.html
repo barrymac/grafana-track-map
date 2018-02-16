@@ -1,14 +1,14 @@
 <div class="editor-row">
     <div class="section gf-form-group">
-        <h5 class="section-heading">Map options</h5>
+        <h5 class="section-heading">Data format options</h5>
         <div class="gf-form">
-            <label class="gf-form-label width-12">Data type</label>
+            <label class="gf-form-label width-14">Data type</label>
             <div class="gf-form-select-wrapper max-width-12">
                 <select class="input-medium gf-form-input" ng-model="ctrl.panel.dataType" ng-options="ty for ty in ctrl.panel.types" ng-change="ctrl.doMapAndRender()"></select>
             </div>
         </div>
         <div class="gf-form" ng-if="ctrl.panel.dataType=='geoJSON'">
-            <label class="gf-form-label width-12">Geo-location field
+            <label class="gf-form-label width-14">Geo-location field
                 <info-popover mode="right-normal">
                 JSON path which contains geoJSON object (i.e. { "type": "FeatureCollection", "features": [ ... })
                 </info-popover>
@@ -16,55 +16,95 @@
             <input class="gf-form-input width-24" ng-model="ctrl.panel.posField" ng-change="ctrl.doMapAndRender()" />
         </div>
         <div class="gf-form" ng-if="ctrl.panel.dataType=='custom'">
-            <label class="gf-form-label width-12">Latitude field
+            <label class="gf-form-label width-14">Latitude field
                 <info-popover mode="right-normal">
                 JSON path which contains latitude value
                 </info-popover>
             </label>
             <input class="gf-form-input width-24" ng-model="ctrl.panel.latField" ng-change="ctrl.doMapAndRender()" />
-            <label class="gf-form-label width-12">Longitude field
+            <label class="gf-form-label width-14">Longitude field
                 <info-popover mode="right-normal">
                 JSON path which contains longitude value
                 </info-popover>
             </label>
             <input class="gf-form-input width-24" ng-model="ctrl.panel.lngField" ng-change="ctrl.doMapAndRender()" />
         </div>
+    </div>
+</div>
+
+<div class="editor-row">
+    <div class="section gf-form-group">
+        <h5 class="section-heading">Tooltips options</h5>
+
         <div class="gf-form">
-            <label class="gf-form-label width-12">Data field
+            <label class="gf-form-label width-14">Data field
                 <info-popover mode="right-normal">
-                JSON path which contains data value
+                JSON path which contains data value (shown on tooltips)
                 </info-popover>
             </label>
             <input class="gf-form-input width-24" ng-model="ctrl.panel.dataField" ng-change="ctrl.doMapAndRender()" />
-            <label class="gf-form-label width-12">Data label
-            </label>
+            
+            <label class="gf-form-label width-14">Data label</label>
             <input class="gf-form-input width-24" ng-model="ctrl.panel.dataLabel" ng-change="ctrl.doMapAndRender()" />
         </div>
+        <div class="gf-form" ng-if="ctrl.panel.dataType=='geoJSON'">
+            <label class="gf-form-label width-14">Show properties fields
+                <info-popover mode="right-normal">
+                Show all GeoJSON properties in tooltips
+                </info-popover>
+            </label>
+            <gf-form-switch class="gf-form" checked="ctrl.panel.showProps"></gf-form-switch>
+        </div>
         <div class="gf-form">
-            <label class="gf-form-label width-12">Map tile</label>
+            <label class="gf-form-label width-14">Link to panel
+                <info-popover mode="right-normal">
+                Embed related Graph panel in tooltips (search panel with same metric in the current Dashboard)
+                </info-popover>
+            </label>
+            <gf-form-switch class="gf-form" checked="ctrl.panel.linkPanel"></gf-form-switch>
+        </div>
+    </div>
+</div>
+    
+<div class="editor-row">
+    <div class="section gf-form-group">
+        <h5 class="section-heading">Map options</h5>
+        
+        <div class="gf-form">
+            <label class="gf-form-label width-14">Map tile</label>
             <div class="gf-form-select-wrapper max-width-12">
                 <select class="input-medium gf-form-input" ng-model="ctrl.panel.mapTile" ng-options="t for t in ctrl.panel.tileList" ng-change="ctrl.doMapAndRender()"></select>
             </div>
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-12">Map Zoom</label>
+            <label class="gf-form-label width-14">Map Zoom</label>
             <span class="max-width-12">
                 <input class="gf-form-input" ng-model="ctrl.panel.zoom" ng-change="ctrl.doMapAndRender()" />
             </span>
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-12">Circle/marker</label>
+            <label class="gf-form-label width-14">Circle/marker</label>
             <gf-form-switch class="gf-form" title="Circle/marker" checked="ctrl.panel.circle"></gf-form-switch>
-            <label ng-if="ctrl.panel.circle" class="gf-form-label width-12">Circle Color</label>
+            <label ng-if="ctrl.panel.circle" class="gf-form-label width-14">Circle Color</label>
             <span ng-if="ctrl.panel.circle" class="max-width-12">
                 <spectrum-picker class="gf-form-input" ng-model="ctrl.panel.markerColor" ng-change="ctrl.doMapAndRender()" ></spectrum-picker>
             </span>
         </div>
         <div class="gf-form">
-            <label class="gf-form-label width-12">Bg Color</label>
+            <label class="gf-form-label width-14">Bg Color</label>
             <span class="max-width-12">
                 <spectrum-picker class="gf-form-input" ng-model="ctrl.panel.bgColor" ng-change="ctrl.render()" ></spectrum-picker>
             </span>
         </div>
     </div>
 </div>
+
+<!--<div class="editor-row">
+    <hr>
+    <div class="gf-form">
+        <label class="gf-form-label width-14">Test</label>
+        <span class="max-width-12">
+            <button class="gf-form-input" ng-click="ctrl.addPanel()">add panel</button>
+        </span>
+    </div>
+</div>-->

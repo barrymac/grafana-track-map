@@ -86,7 +86,9 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                     _this.panel.posField = _this.panel.posField || '';
                     _this.panel.dataField = _this.panel.dataField || '';
                     _this.panel.dataLabel = _this.panel.dataLabel || 'value';
-                    _this.panel.tiles = [{ name: 'openstreet', url: '//tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 18 }, { name: 'opentopomap', url: '//{s}.tile.opentopomap.org/{z}/{x}/{y}.png', maxZoom: 17 }, { name: 'opencyclemap', url: '//a.tile3.opencyclemap.org/landscape/{z}/{x}/{y}.png' }];
+                    _this.panel.linkPanel = _this.panel.linkPanel || false;
+                    _this.panel.showProps = _this.panel.showProps || false;
+                    _this.panel.tiles = [{ name: 'openstreet', url: '//tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 18 }, { name: 'opentopomap', url: '//{s}.tile.opentopomap.org/{z}/{x}/{y}.png', maxZoom: 17 }, { name: 'opencyclemap', url: '//{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png' }, { name: 'opencyclemap_transport', url: '//{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png' }, { name: 'opencyclemap_outdoors', url: '//{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png' }, { name: 'mapquest_aerial', url: '//tileproxy.cloud.mapquest.com/tiles/1.0.0/hyb/{z}/{x}/{y}.png', maxZoom: 18 }];
                     _this.panel.tileList = _this.panel.tiles.map(function (item) {
                         return item.name;
                     }, []);
@@ -94,7 +96,6 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                     _this.panel.zoom = _this.panel.zoom || 12;
                     _this.panel.circle = _this.panel.circle || false;
                     _this.panel.markerColor = _this.panel.markerColor || 'red';
-                    var dashboard = _this.dashboard;
 
                     _this.events.on('init-edit-mode', _this.onInitEditMode.bind(_this));
 
@@ -123,6 +124,8 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                         var maxLon = 5.4859435558;
 
                         for (var k in data) {
+                            var target = this.panel.targets[k].target;
+                            console.log("data " + k + " target: ", target);
                             if (data[k].datapoints) {
                                 for (var i = 0; i < data[k].datapoints.length; i++) {
                                     var position, properties;
@@ -132,10 +135,10 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                         if (this.panel.posField) {
                                             var geo = _.get(dataPoint, this.panel.posField); // lodash _.get(object, path, [defaultValue])
                                             position = geo.features[0].geometry.coordinates;
-                                            properties = geo.features[0].properties;
+                                            if (this.panel.showProps) properties = geo.features[0].properties;
                                         } else if (dataPoint && dataPoint.features) {
                                             position = dataPoint.features[0].geometry.coordinates;
-                                            properties = dataPoint.features[0].properties;
+                                            if (this.panel.showProps) properties = dataPoint.features[0].properties;
                                         } else if (dataPoint && (dataPoint.latitude || dataPoint.lat)) {
                                             var lat = dataPoint.latitude || dataPoint.lat;
                                             var lng = dataPoint.longitude || dataPoint.lng;
@@ -159,7 +162,8 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                             value: _value,
                                             position: position,
                                             timestamp: data[k].datapoints[i][1],
-                                            properties: properties
+                                            properties: properties,
+                                            target: target
                                         });
                                     } else if (this.panel.dataType == "custom") {
                                         var dataPoint = data[k].datapoints[i][0];
@@ -183,7 +187,8 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                             value: _value,
                                             position: position,
                                             timestamp: data[k].datapoints[i][1],
-                                            properties: properties
+                                            properties: properties,
+                                            target: target
                                         });
                                     }
                                 }
@@ -250,7 +255,19 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                 var obj = { date: moment(point.timestamp) };
                                 obj[_this2.panel.dataLabel] = point.value;
                                 obj = _.merge(obj, point.properties);
-                                point.marker.bindPopup(_this2._toHtml(obj));
+                                var html = _this2._toHtml(obj);
+                                var panel = point.target ? _this2._findPanelByTarget(point.target) : null;
+                                console.log("point > panel", panel);
+                                if (_this2.panel.linkPanel && panel) {
+                                    var ts_range = "&from=" + timeSrv.timeRange().from.valueOf() + "&to=" + timeSrv.timeRange().to.valueOf();
+                                    var url = "/grafana/dashboard-solo/db/firenze_traffic_embed?panelId=" + panel.id + "&theme=light" + ts_range;
+                                    html += "<div class='link-panel'>";
+                                    html += "<hr><b>Data Graph for " + point.target + "</b>";
+                                    //html += "<a class='link-panel' href='"+panel.id+"'>panel "+panel.id+"</>";
+                                    html += "<iframe src='" + url + "' class='link-panel'></iframe>";
+                                    html += "</div>";
+                                }
+                                point.marker.bindPopup(html);
                             }
                         });
                     }
@@ -275,6 +292,19 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                         return html;
                     }
                 }, {
+                    key: '_findPanelByTarget',
+                    value: function _findPanelByTarget(target) {
+                        for (var r in this.dashboard.rows) {
+                            for (var p in this.dashboard.rows[r].panels) {
+                                var panel = this.dashboard.rows[r].panels[p];
+                                if (panel.targets["0"].target == target && panel.type == "graph") {
+                                    return panel;
+                                }
+                            }
+                        }
+                        return null;
+                    }
+                }, {
                     key: 'doMapAndRender',
                     value: function doMapAndRender() {
                         this.doMap();
@@ -284,6 +314,14 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                     key: 'onInitEditMode',
                     value: function onInitEditMode() {
                         this.addEditorTab('Options', 'public/plugins/grafana-map-panel/editor.html', 2);
+                    }
+                }, {
+                    key: 'addPanel',
+                    value: function addPanel() {
+                        console.log("dashboard", this.dashboard);
+                        console.log("panel", this.panel);
+
+                        //        this.dashboard.rows["0"].panels["0"].targets["0"].target
                     }
                 }, {
                     key: 'link',
