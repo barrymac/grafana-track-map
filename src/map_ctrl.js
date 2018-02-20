@@ -46,8 +46,6 @@ export class MapCtrl extends MetricsPanelCtrl {
                 
         this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
         
-//        this.events.on('panel-teardown', this.onPanelTeardown.bind(this));
-        
         this.events.on('panel-initialized', this.render.bind(this));
         
         this.events.on('data-received', (data) => {
@@ -184,10 +182,12 @@ export class MapCtrl extends MetricsPanelCtrl {
                         //stroke: 'false',
                         fillColor: 'none',
                         fillOpacity: 0.5,
-                        radius: 10
+                        radius: 10,
+                        title: point.target
                     });                    
                 } else {
                     point.marker = L.marker(point.position, {
+                        title: point.target
                     });
                 }
                 point.marker.addTo(this.myMap);

@@ -99,8 +99,6 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
 
                     _this.events.on('init-edit-mode', _this.onInitEditMode.bind(_this));
 
-                    //        this.events.on('panel-teardown', this.onPanelTeardown.bind(this));
-
                     _this.events.on('panel-initialized', _this.render.bind(_this));
 
                     _this.events.on('data-received', function (data) {
@@ -246,10 +244,13 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                         //stroke: 'false',
                                         fillColor: 'none',
                                         fillOpacity: 0.5,
-                                        radius: 10
+                                        radius: 10,
+                                        title: point.target
                                     });
                                 } else {
-                                    point.marker = L.marker(point.position, {});
+                                    point.marker = L.marker(point.position, {
+                                        title: point.target
+                                    });
                                 }
                                 point.marker.addTo(_this2.myMap);
                                 var obj = { date: moment(point.timestamp) };
