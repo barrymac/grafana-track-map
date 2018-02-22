@@ -95,7 +95,8 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                     _this.panel.mapTile = _this.panel.mapTile || _this.panel.tileList[0];
                     _this.panel.zoom = _this.panel.zoom || 12;
                     _this.panel.circle = _this.panel.circle || false;
-                    _this.panel.markerColor = _this.panel.markerColor || 'red';
+                    _this.panel.circleColor = _this.panel.circleColor || 'red';
+                    _this.panel.markerColor = _this.panel.markerColor || 'default';
 
                     _this.events.on('init-edit-mode', _this.onInitEditMode.bind(_this));
 
@@ -198,15 +199,16 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                         if (this.myMap) {
                             this.myMap.remove();
                         }
-                        var center = this.coords.find(function (point) {
+                        var points = this.coords.map(function (point) {
                             return point.position;
-                        });
-                        center = center ? center.position : [0, 0];
+                        }, []);
+                        var bounds = L.latLngBounds(points);
                         var id = "map_" + this.panel.id;
                         this.myMap = L.map(id, {
-                            center: center,
+                            center: bounds.getCenter(),
                             zoom: this.panel.zoom
                         });
+                        this.myMap.fitBounds(bounds);
 
                         //this.myMap.fitBounds([[minLat, minLon], [maxLat, maxLon]]);
 
@@ -240,7 +242,7 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                             if (point.position) {
                                 if (_this2.panel.circle) {
                                     point.marker = L.circleMarker(point.position, {
-                                        color: panel.markerColor,
+                                        color: _this2.panel.circleColor,
                                         //stroke: 'false',
                                         fillColor: 'none',
                                         fillOpacity: 0.5,
@@ -248,7 +250,14 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                         title: point.target
                                     });
                                 } else {
+                                    // marker
+                                    var marker = _this2.panel.markerColor == 'default' ? "" : "-" + _this2.panel.markerColor;
+                                    var customIcon = L.icon({
+                                        iconUrl: '/grafana/public/plugins/grafana-map-panel/images/marker-icon' + marker + '.png',
+                                        iconSize: [25, 41] // size of the icon
+                                    });
                                     point.marker = L.marker(point.position, {
+                                        icon: customIcon,
                                         title: point.target
                                     });
                                 }
@@ -261,7 +270,7 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                 console.log("point > panel", panel);
                                 if (_this2.panel.linkPanel && panel) {
                                     var ts_range = "&from=" + timeSrv.timeRange().from.valueOf() + "&to=" + timeSrv.timeRange().to.valueOf();
-                                    var url = "/grafana/dashboard-solo/db/firenze_traffic_embed?panelId=" + panel.id + "&theme=light" + ts_range;
+                                    var url = "/grafana/dashboard-solo/db/" + _this2.dashboard.title + "?panelId=" + panel.id + "&theme=light" + ts_range;
                                     html += "<div class='link-panel'>";
                                     html += "<hr><b>Data Graph for " + point.target + "</b>";
                                     //html += "<a class='link-panel' href='"+panel.id+"'>panel "+panel.id+"</>";

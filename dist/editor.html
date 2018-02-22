@@ -87,7 +87,13 @@
             <gf-form-switch class="gf-form" title="Circle/marker" checked="ctrl.panel.circle"></gf-form-switch>
             <label ng-if="ctrl.panel.circle" class="gf-form-label width-14">Circle Color</label>
             <span ng-if="ctrl.panel.circle" class="max-width-12">
-                <spectrum-picker class="gf-form-input" ng-model="ctrl.panel.markerColor" ng-change="ctrl.doMapAndRender()" ></spectrum-picker>
+                <spectrum-picker class="gf-form-input" ng-model="ctrl.panel.circleColor" ng-change="ctrl.doMapAndRender()" ></spectrum-picker>
+            </span>
+            <label ng-if="!ctrl.panel.circle" class="gf-form-label width-14">Marker Type</label>
+            <span ng-if="!ctrl.panel.circle" class="max-width-12">
+                <div class="gf-form-select-wrapper max-width-12">
+                    <select class="input-medium gf-form-input" ng-model="ctrl.panel.markerColor" ng-options="t for t in ['default','red','green','orange','yellow','violet','grey','black']" ng-change="ctrl.doMapAndRender()"></select>
+                </div>
             </span>
         </div>
         <div class="gf-form">

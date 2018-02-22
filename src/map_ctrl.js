@@ -42,7 +42,8 @@ export class MapCtrl extends MetricsPanelCtrl {
         this.panel.mapTile = this.panel.mapTile || this.panel.tileList[0];
         this.panel.zoom = this.panel.zoom || 12;
         this.panel.circle = this.panel.circle || false;
-        this.panel.markerColor = this.panel.markerColor || 'red';
+        this.panel.circleColor = this.panel.circleColor || 'red';
+        this.panel.markerColor = this.panel.markerColor || 'default';
                 
         this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
         
@@ -142,13 +143,16 @@ export class MapCtrl extends MetricsPanelCtrl {
         if (this.myMap) {
             this.myMap.remove();
         }
-        var center = this.coords.find(point => point.position);
-        center = center ? center.position : [0, 0];
+        var points = this.coords.map(function(point) {
+            return point.position;
+        }, []);
+        var bounds = L.latLngBounds(points);
         var id = "map_"+this.panel.id;
         this.myMap = L.map(id, {
-            center: center,
+            center: bounds.getCenter(),
             zoom: this.panel.zoom
         });
+        this.myMap.fitBounds(bounds);
         
         //this.myMap.fitBounds([[minLat, minLon], [maxLat, maxLon]]);
 
@@ -178,7 +182,7 @@ export class MapCtrl extends MetricsPanelCtrl {
             if (point.position) {
                 if (this.panel.circle) {
                     point.marker = L.circleMarker(point.position, {
-                        color: panel.markerColor,
+                        color: this.panel.circleColor,
                         //stroke: 'false',
                         fillColor: 'none',
                         fillOpacity: 0.5,
@@ -186,7 +190,14 @@ export class MapCtrl extends MetricsPanelCtrl {
                         title: point.target
                     });                    
                 } else {
+                    // marker
+                    var marker = this.panel.markerColor=='default' ? "" : "-"+this.panel.markerColor;
+                    var customIcon = L.icon({
+                        iconUrl: '/grafana/public/plugins/grafana-map-panel/images/marker-icon'+marker+'.png',
+                        iconSize: [25, 41], // size of the icon
+                    });
                     point.marker = L.marker(point.position, {
+                        icon: customIcon,
                         title: point.target
                     });
                 }
@@ -199,7 +210,7 @@ export class MapCtrl extends MetricsPanelCtrl {
                 console.log("point > panel", panel);
                 if (this.panel.linkPanel && panel) {
                     var ts_range = "&from="+timeSrv.timeRange().from.valueOf()+"&to="+timeSrv.timeRange().to.valueOf();
-                    var url = "/grafana/dashboard-solo/db/firenze_traffic_embed?panelId="+panel.id+"&theme=light"+ts_range;
+                    var url = "/grafana/dashboard-solo/db/"+this.dashboard.title+"?panelId="+panel.id+"&theme=light"+ts_range;
                     html += "<div class='link-panel'>";
                     html += "<hr><b>Data Graph for "+point.target+"</b>";
                     //html += "<a class='link-panel' href='"+panel.id+"'>panel "+panel.id+"</>";
