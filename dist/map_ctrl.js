@@ -208,7 +208,11 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                             center: bounds.getCenter(),
                             zoom: this.panel.zoom
                         });
-                        this.myMap.fitBounds(bounds);
+                        try {
+                            if (points.length > 1) this.myMap.fitBounds(bounds);
+                        } catch (e) {
+                            console.log("error fitBounds", e);
+                        }
 
                         //this.myMap.fitBounds([[minLat, minLon], [maxLat, maxLon]]);
 
