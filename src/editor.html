@@ -36,17 +36,30 @@
     <div class="section gf-form-group">
         <h5 class="section-heading">Tooltips options</h5>
 
-        <div class="gf-form">
+        <div class="gf-form" ng-repeat="(key, df) in ctrl.panel.dataField">
+            <label class="gf-form-label">{{key+1}}
+            </label>
             <label class="gf-form-label width-14">Data field
                 <info-popover mode="right-normal">
                 JSON path which contains data value (shown on tooltips)
                 </info-popover>
             </label>
-            <input class="gf-form-input width-24" ng-model="ctrl.panel.dataField" ng-change="ctrl.doMapAndRender()" />
-            
+            <input class="gf-form-input width-24" ng-model="ctrl.panel.dataField[key]" ng-change="ctrl.doMapAndRender()" />
+
             <label class="gf-form-label width-14">Data label</label>
-            <input class="gf-form-input width-24" ng-model="ctrl.panel.dataLabel" ng-change="ctrl.doMapAndRender()" />
+            <input class="gf-form-input width-24" ng-model="ctrl.panel.dataLabel[key]" ng-change="ctrl.doMapAndRender()" />
+            <label class="gf-form-label gf-form-label--grow">
+                <a class="pointer" tabindex="1" ng-click="ctrl.removeDataField(key)">
+                    <i class="fa fa-trash"></i>
+                </a>
+            </label>
         </div>
+        <div class="gf-form">
+            <button class="btn btn-secondary gf-form-btn" ng-click="ctrl.addDataField()">
+                Add Data field
+            </button>
+        </div>
+        
         <div class="gf-form" ng-if="ctrl.panel.dataType=='geoJSON'">
             <label class="gf-form-label width-14">Show properties fields
                 <info-popover mode="right-normal">

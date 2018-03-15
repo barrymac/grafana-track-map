@@ -84,8 +84,10 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                     _this.panel.latField = _this.panel.latField || null;
                     _this.panel.lngField = _this.panel.lngField || null;
                     _this.panel.posField = _this.panel.posField || '';
-                    _this.panel.dataField = _this.panel.dataField || '';
-                    _this.panel.dataLabel = _this.panel.dataLabel || 'value';
+                    if (_this.panel.dataField && !Array.isArray(_this.panel.dataField)) _this.panel.dataField = [_this.panel.dataField];
+                    if (_this.panel.dataLabel && !Array.isArray(_this.panel.dataLabel)) _this.panel.dataLabel = [_this.panel.dataLabel];
+                    _this.panel.dataField = _this.panel.dataField || [''];
+                    _this.panel.dataLabel = _this.panel.dataLabel || ['value'];
                     _this.panel.linkPanel = _this.panel.linkPanel || false;
                     _this.panel.showProps = _this.panel.showProps || false;
                     _this.panel.tiles = [{ name: 'openstreet', url: '//tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 18 }, { name: 'opentopomap', url: '//{s}.tile.opentopomap.org/{z}/{x}/{y}.png', maxZoom: 17 }, { name: 'opencyclemap', url: '//{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png' }, { name: 'opencyclemap_transport', url: '//{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png' }, { name: 'opencyclemap_outdoors', url: '//{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png' }, { name: 'mapquest_aerial', url: '//tileproxy.cloud.mapquest.com/tiles/1.0.0/hyb/{z}/{x}/{y}.png', maxZoom: 18 }];
@@ -126,8 +128,14 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                             var target = this.panel.targets[k].target;
                             console.log("data " + k + " target: ", target);
                             if (data[k].datapoints) {
+                                console.log("   >datapoints: ", data[k].datapoints.length);
                                 for (var i = 0; i < data[k].datapoints.length; i++) {
-                                    var position, properties;
+                                    // position
+                                    var position,
+                                        properties,
+                                        values = [],
+                                        ts;
+                                    if (data[k].datapoints[i] && data[k].datapoints[i][1]) ts = data[k].datapoints[i][1];
                                     if (this.panel.dataType == "geoJSON") {
                                         // coordinates field of geoJSON
                                         var dataPoint = data[k].datapoints[i][0];
@@ -143,10 +151,9 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                             var lng = dataPoint.longitude || dataPoint.lng;
                                             position = { lat: lat, lng: lng };
                                             properties = {};
-                                        } else {}
-                                        // nothing
-
-                                        // ???
+                                        } else {
+                                            // nothing
+                                        }
                                         if (position) {
                                             position = { lat: position[1], lng: position[0] };
                                             minLat = Math.min(minLat, position.lat);
@@ -154,16 +161,6 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                             maxLat = Math.max(maxLat, position.lat);
                                             maxLon = Math.max(maxLon, position.lng);
                                         }
-                                        if (this.panel.dataField) {
-                                            var _value = _.get(dataPoint, this.panel.dataField); // lodash _.get(object, path, [defaultValue])
-                                        } else _value = null;
-                                        this.coords.push({
-                                            value: _value,
-                                            position: position,
-                                            timestamp: data[k].datapoints[i][1],
-                                            properties: properties,
-                                            target: target
-                                        });
                                     } else if (this.panel.dataType == "custom") {
                                         var dataPoint = data[k].datapoints[i][0];
                                         if (this.panel.latField && this.panel.lngField) {
@@ -179,17 +176,28 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                         } else {
                                             // nothing
                                         }
-                                        if (this.panel.dataField) {
-                                            var _value = _.get(dataPoint, this.panel.dataField); // lodash _.get(object, path, [defaultValue])
-                                        } else _value = null;
-                                        this.coords.push({
-                                            value: _value,
-                                            position: position,
-                                            timestamp: data[k].datapoints[i][1],
-                                            properties: properties,
-                                            target: target
-                                        });
                                     }
+                                    // datafield
+                                    if (this.panel.dataField) {
+                                        if (Array.isArray(this.panel.dataField)) {
+                                            // multiple values
+                                            for (var z in this.panel.dataField) {
+                                                values.push({ 'label': this.panel.dataLabel[z], 'value': _.get(dataPoint, this.panel.dataField[z]) });
+                                            }
+                                        } else {
+                                            // single value
+                                            values.push({ 'label': this.panel.dataLabel, 'value': _.get(dataPoint, this.panel.dataField) });
+                                        }
+                                    } else {
+                                        values = [];
+                                    }
+                                    this.coords.push({
+                                        values: values,
+                                        position: position,
+                                        timestamp: ts,
+                                        properties: properties,
+                                        target: target
+                                    });
                                 }
                             } else {
                                 console.log("doMap - no datapoint for " + k);
@@ -202,19 +210,31 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                         var points = this.coords.map(function (point) {
                             return point.position;
                         }, []);
-                        var bounds = L.latLngBounds(points);
                         var id = "map_" + this.panel.id;
-                        this.myMap = L.map(id, {
-                            center: bounds.getCenter(),
-                            zoom: this.panel.zoom
-                        });
+                        if (points.length > 0) {
+                            var bounds = L.latLngBounds(points);
+                            var center = bounds.getCenter();
+                            var zoom = this.panel.zoom;
+                            this.myMap = L.map(id, {
+                                center: center,
+                                zoom: zoom
+                            });
+                            console.log("OK map for " + k + " target: ", target);
+                        } else {
+                            // no points
+                            //            bounds = L.latLngBounds([
+                            //                [47.043706416, 6.5799864891],
+                            //                [36.4616233749, 18.5032287476]
+                            //            ]);
+                            //this.myMap = L.map(id);
+                            console.log("NO map for " + k + " target: ", target);
+                            return;
+                        }
                         try {
                             if (points.length > 1) this.myMap.fitBounds(bounds);
                         } catch (e) {
                             console.log("error fitBounds", e);
                         }
-
-                        //this.myMap.fitBounds([[minLat, minLon], [maxLat, maxLon]]);
 
                         this.myMap.on("boxzoomend", function (e) {
                             var coordsInBox = this.coords.filter(function (coord) {
@@ -267,7 +287,9 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                 }
                                 point.marker.addTo(_this2.myMap);
                                 var obj = { date: moment(point.timestamp) };
-                                obj[_this2.panel.dataLabel] = point.value;
+                                for (var k in point.values) {
+                                    obj[point.values[k].label] = point.values[k].value;
+                                }
                                 obj = _.merge(obj, point.properties);
                                 var html = _this2._toHtml(obj);
                                 var panel = point.target ? _this2._findPanelByTarget(point.target) : null;
@@ -317,6 +339,21 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                             }
                         }
                         return null;
+                    }
+                }, {
+                    key: 'addDataField',
+                    value: function addDataField() {
+                        console.log('addDataField');
+                        this.panel.dataField.push('');
+                        this.panel.dataLabel.push('value');
+                    }
+                }, {
+                    key: 'removeDataField',
+                    value: function removeDataField(key) {
+                        console.log('removeDataField: ' + key);
+                        this.panel.dataField.splice(key, 1);
+                        this.panel.dataLabel.splice(key, 1);
+                        this.doMapAndRender();
                     }
                 }, {
                     key: 'doMapAndRender',

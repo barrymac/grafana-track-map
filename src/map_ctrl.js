@@ -24,8 +24,10 @@ export class MapCtrl extends MetricsPanelCtrl {
         this.panel.latField = this.panel.latField || null;
         this.panel.lngField = this.panel.lngField || null;
         this.panel.posField = this.panel.posField || '';
-        this.panel.dataField = this.panel.dataField || '';
-        this.panel.dataLabel = this.panel.dataLabel || 'value';
+        if (this.panel.dataField && !Array.isArray(this.panel.dataField)) this.panel.dataField = [this.panel.dataField];
+        if (this.panel.dataLabel && !Array.isArray(this.panel.dataLabel)) this.panel.dataLabel = [this.panel.dataLabel];
+        this.panel.dataField = this.panel.dataField || [''];
+        this.panel.dataLabel = this.panel.dataLabel || ['value'];
         this.panel.linkPanel = this.panel.linkPanel || false;
         this.panel.showProps = this.panel.showProps || false;
         this.panel.tiles = [
@@ -68,8 +70,11 @@ export class MapCtrl extends MetricsPanelCtrl {
             var target = this.panel.targets[k].target;
             console.log("data "+k+" target: ",target);
             if (data[k].datapoints) {
+                console.log("   >datapoints: ",data[k].datapoints.length);
                 for (var i = 0; i < data[k].datapoints.length; i++) {
-                    var position, properties;
+                    // position
+                    var position, properties, values = [], ts;
+                    if (data[k].datapoints[i] && data[k].datapoints[i][1]) ts = data[k].datapoints[i][1];
                     if (this.panel.dataType=="geoJSON") {
                         // coordinates field of geoJSON
                         var dataPoint = data[k].datapoints[i][0];
@@ -88,7 +93,6 @@ export class MapCtrl extends MetricsPanelCtrl {
                         } else {
                             // nothing
                         }
-                        // ???
                         if (position) {
                             position = {lat: position[1], lng: position[0]};
                             minLat = Math.min(minLat, position.lat);
@@ -96,17 +100,6 @@ export class MapCtrl extends MetricsPanelCtrl {
                             maxLat = Math.max(maxLat, position.lat);
                             maxLon = Math.max(maxLon, position.lng);
                         }
-                        if (this.panel.dataField) {
-                            var _value = _.get(dataPoint, this.panel.dataField);    // lodash _.get(object, path, [defaultValue])
-                        } else
-                            _value = null;
-                        this.coords.push({
-                            value: _value,
-                            position: position,
-                            timestamp: data[k].datapoints[i][1],
-                            properties: properties,
-                            target: target
-                        });
                     } else if (this.panel.dataType=="custom") {
                         var dataPoint = data[k].datapoints[i][0];
                         if (this.panel.latField && this.panel.lngField) {
@@ -122,18 +115,28 @@ export class MapCtrl extends MetricsPanelCtrl {
                         } else {
                             // nothing
                         }
-                        if (this.panel.dataField) {
-                            var _value = _.get(dataPoint, this.panel.dataField);    // lodash _.get(object, path, [defaultValue])
-                        } else
-                            _value = null;
-                        this.coords.push({
-                            value: _value,
-                            position: position,
-                            timestamp: data[k].datapoints[i][1],
-                            properties: properties,
-                            target: target
-                        });                    
                     }
+                    // datafield
+                    if (this.panel.dataField) {
+                        if (Array.isArray(this.panel.dataField)) {
+                            // multiple values
+                            for (var z in this.panel.dataField) {
+                                values.push({ 'label': this.panel.dataLabel[z], 'value': _.get(dataPoint, this.panel.dataField[z])});
+                            }
+                        } else {
+                            // single value
+                            values.push({ 'label': this.panel.dataLabel, 'value': _.get(dataPoint, this.panel.dataField)});
+                        }
+                    } else {
+                        values = [];
+                    }
+                    this.coords.push({
+                        values: values,
+                        position: position,
+                        timestamp: ts,
+                        properties: properties,
+                        target: target
+                    });
                 }
             } else {
                 console.log("doMap - no datapoint for "+k);
@@ -146,20 +149,32 @@ export class MapCtrl extends MetricsPanelCtrl {
         var points = this.coords.map(function(point) {
             return point.position;
         }, []);
-        var bounds = L.latLngBounds(points);
         var id = "map_"+this.panel.id;
-        this.myMap = L.map(id, {
-            center: bounds.getCenter(),
-            zoom: this.panel.zoom
-        });
+        if (points.length>0) {
+            var bounds = L.latLngBounds(points);
+            var center = bounds.getCenter();
+            var zoom = this.panel.zoom;
+            this.myMap = L.map(id, {
+                center: center,
+                zoom: zoom
+            });
+            console.log("OK map for "+k+" target: ",target);
+        } else {
+            // no points
+//            bounds = L.latLngBounds([
+//                [47.043706416, 6.5799864891],
+//                [36.4616233749, 18.5032287476]
+//            ]);
+            //this.myMap = L.map(id);
+            console.log("NO map for "+k+" target: ",target);
+            return;
+        }
         try {
             if (points.length>1) this.myMap.fitBounds(bounds);
         } catch(e) {
             console.log("error fitBounds", e)
         }
         
-        //this.myMap.fitBounds([[minLat, minLon], [maxLat, maxLon]]);
-
         this.myMap.on("boxzoomend", function (e) {
             const coordsInBox = this.coords.filter(coord =>
                 coord.position && e.boxZoomBounds.contains(L.latLng(coord.position.lat, coord.position.lng))
@@ -207,7 +222,9 @@ export class MapCtrl extends MetricsPanelCtrl {
                 }
                 point.marker.addTo(this.myMap);
                 var obj = { date: moment(point.timestamp) };
-                obj[this.panel.dataLabel] = point.value;
+                for (var k in point.values) {
+                    obj[point.values[k].label] = point.values[k].value;
+                }
                 obj = _.merge(obj, point.properties)
                 var html = this._toHtml(obj);
                 var panel = point.target ? this._findPanelByTarget(point.target) : null;
@@ -255,6 +272,19 @@ export class MapCtrl extends MetricsPanelCtrl {
             }
         }
         return null;
+    }
+
+    addDataField() {
+        console.log('addDataField');
+        this.panel.dataField.push('');
+        this.panel.dataLabel.push('value');
+    }
+    
+    removeDataField(key) {
+        console.log('removeDataField: '+key);
+        this.panel.dataField.splice(key, 1);
+        this.panel.dataLabel.splice(key, 1);
+        this.doMapAndRender();
     }
 
     doMapAndRender() {
