@@ -292,13 +292,13 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                 }
                                 obj = _.merge(obj, point.properties);
                                 var html = _this2._toHtml(obj);
-                                var panel = point.target ? _this2._findPanelByTarget(point.target) : null;
+                                var panel = point.target ? _this2._findPanelByTargetOrTitle(point.target, point.values[0].value) : null;
                                 console.log("point > panel", panel);
                                 if (_this2.panel.linkPanel && panel) {
                                     var ts_range = "&from=" + timeSrv.timeRange().from.valueOf() + "&to=" + timeSrv.timeRange().to.valueOf();
-                                    var url = "/grafana/dashboard-solo/db/" + _this2.dashboard.title + "?panelId=" + panel.id + "&theme=light" + ts_range;
+                                    var url = "/grafana/dashboard-solo/db/" + _this2.dashboard.meta.slug + "?panelId=" + panel.id + "&theme=light" + ts_range;
                                     html += "<div class='link-panel'>";
-                                    html += "<hr><b>Data Graph for " + point.target + "</b>";
+                                    html += "<hr><b>Data Graph for " + panel._label + "</b>";
                                     //html += "<a class='link-panel' href='"+panel.id+"'>panel "+panel.id+"</>";
                                     html += "<iframe src='" + url + "' class='link-panel'></iframe>";
                                     html += "</div>";
@@ -328,12 +328,13 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                         return html;
                     }
                 }, {
-                    key: '_findPanelByTarget',
-                    value: function _findPanelByTarget(target) {
+                    key: '_findPanelByTargetOrTitle',
+                    value: function _findPanelByTargetOrTitle(target, title) {
                         for (var r in this.dashboard.rows) {
                             for (var p in this.dashboard.rows[r].panels) {
                                 var panel = this.dashboard.rows[r].panels[p];
-                                if (panel.targets["0"].target == target && panel.type == "graph") {
+                                if ((panel.targets["0"].target == target || panel.title == title) && panel.type == "graph") {
+                                    if (panel.title == title) panel._label = title;else panel._label = target;
                                     return panel;
                                 }
                             }

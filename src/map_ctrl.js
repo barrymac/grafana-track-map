@@ -225,13 +225,13 @@ export class MapCtrl extends MetricsPanelCtrl {
                 }
                 obj = _.merge(obj, point.properties)
                 var html = this._toHtml(obj);
-                var panel = point.target ? this._findPanelByTarget(point.target) : null;
+                var panel = point.target ? this._findPanelByTargetOrTitle(point.target, point.values[0].value) : null;
                 console.log("point > panel", panel);
                 if (this.panel.linkPanel && panel) {
                     var ts_range = "&from="+timeSrv.timeRange().from.valueOf()+"&to="+timeSrv.timeRange().to.valueOf();
-                    var url = "/grafana/dashboard-solo/db/"+this.dashboard.title+"?panelId="+panel.id+"&theme=light"+ts_range;
+                    var url = "/grafana/dashboard-solo/db/"+this.dashboard.meta.slug+"?panelId="+panel.id+"&theme=light"+ts_range;
                     html += "<div class='link-panel'>";
-                    html += "<hr><b>Data Graph for "+point.target+"</b>";
+                    html += "<hr><b>Data Graph for "+panel._label+"</b>";
                     //html += "<a class='link-panel' href='"+panel.id+"'>panel "+panel.id+"</>";
                     html += "<iframe src='"+url+"' class='link-panel'></iframe>";
                     html += "</div>";
@@ -260,11 +260,12 @@ export class MapCtrl extends MetricsPanelCtrl {
         return html;
     }
     
-    _findPanelByTarget(target) {
+    _findPanelByTargetOrTitle(target, title) {
         for (var r in this.dashboard.rows) {
             for (var p in this.dashboard.rows[r].panels) {
                 var panel = this.dashboard.rows[r].panels[p];
-                if (panel.targets["0"].target==target && panel.type=="graph") {
+                if ((panel.targets["0"].target==target || panel.title==title) && panel.type=="graph") {
+					if (panel.title==title) panel._label = title; else panel._label = target;
                     return panel;
                 }
             }
