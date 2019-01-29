@@ -1,9 +1,9 @@
 'use strict';
 
-System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './leaflet.css!', 'app/plugins/sdk', 'app/core/app_events'], function (_export, _context) {
+System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './leaflet.css!', 'app/plugins/sdk', 'app/core/app_events', './flatten'], function (_export, _context) {
     "use strict";
 
-    var _, moment, MetricsPanelCtrl, appEvents, _createClass, timeSrv, MapCtrl;
+    var _, moment, MetricsPanelCtrl, appEvents, flatten, _createClass, timeSrv, date_format, MapCtrl;
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -44,6 +44,8 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
             MetricsPanelCtrl = _appPluginsSdk.MetricsPanelCtrl;
         }, function (_appCoreApp_events) {
             appEvents = _appCoreApp_events.default;
+        }, function (_flatten) {
+            flatten = _flatten;
         }],
         execute: function () {
             _createClass = function () {
@@ -64,6 +66,8 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                 };
             }();
 
+            date_format = 'DD/MM/YYYY kk:mm:ss';
+
             _export('MapCtrl', MapCtrl = function (_MetricsPanelCtrl) {
                 _inherits(MapCtrl, _MetricsPanelCtrl);
 
@@ -73,6 +77,7 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                     var _this = _possibleConstructorReturn(this, (MapCtrl.__proto__ || Object.getPrototypeOf(MapCtrl)).call(this, $scope, $injector));
 
                     timeSrv = $injector.get('timeSrv');
+                    _this.scope = $scope;
 
                     _this.myMap = null;
                     _this.coords = [];
@@ -222,11 +227,6 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                             console.log("OK map for " + k + " target: ", target);
                         } else {
                             // no points
-                            //            bounds = L.latLngBounds([
-                            //                [47.043706416, 6.5799864891],
-                            //                [36.4616233749, 18.5032287476]
-                            //            ]);
-                            //this.myMap = L.map(id);
                             console.log("NO map for " + k + " target: ", target);
                             return;
                         }
@@ -318,7 +318,7 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                                 if (typeof obj[k] == 'string' && obj[k].indexOf("http") != -1) {
                                     html += "<a href='" + obj[k] + "' target='_blank'>" + obj[k] + "</a>: ";
                                 } else if (moment.isMoment(obj[k])) {
-                                    html += obj[k].format('DD/MM/YYYY hh:mm:ss');
+                                    html += obj[k].format(date_format);
                                 } else {
                                     html += obj[k];
                                 }
@@ -356,6 +356,27 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                         this.doMapAndRender();
                     }
                 }, {
+                    key: 'showJson',
+                    value: function showJson() {
+                        var _this3 = this;
+
+                        var target = this.panel.targets[0].target;
+                        console.log("   >target", target);
+                        this.datasource.metricGetJson(target).then(function (json_sample) {
+                            console.log("   >json_sample", json_sample);
+                            console.log("showJson");
+                            var modalScope = _this3.scope.$new(true);
+                            modalScope.tabs = { index: 0 };
+                            modalScope.json_orig = JSON.stringify(json_sample, null, 2);
+                            modalScope.json_flat = JSON.stringify(JSON.flatten(json_sample), null, 2);
+                            appEvents.emit('show-modal', {
+                                src: 'public/plugins/grafana-hist-json-datasource/partials/json.sample.html',
+                                //modalClass: 'confirm-modal',
+                                scope: modalScope
+                            });
+                        });
+                    }
+                }, {
                     key: 'doMapAndRender',
                     value: function doMapAndRender() {
                         this.doMap();
@@ -377,14 +398,14 @@ System.register(['./leaflet.js', 'lodash', 'moment', './css/map-panel.css!', './
                 }, {
                     key: 'link',
                     value: function link(scope, elem) {
-                        var _this3 = this;
+                        var _this4 = this;
 
                         this.events.on('render', function () {
 
                             var $panelContainer = elem.find('.panel-container');
 
-                            if (_this3.panel.bgColor) {
-                                $panelContainer.css('background-color', _this3.panel.bgColor);
+                            if (_this4.panel.bgColor) {
+                                $panelContainer.css('background-color', _this4.panel.bgColor);
                             } else {
                                 $panelContainer.css('background-color', '');
                             }

@@ -43,7 +43,11 @@
                 <info-popover mode="right-normal">
                 JSON path which contains data value (shown on tooltips)
                 </info-popover>
+                <a class="pointer pull-right gf-form-help-icon" ng-click="ctrl.showJson()" title="click to show JSON sample">
+                    <i class="fa fa-code"></i>
+                </a>
             </label>
+
             <input class="gf-form-input width-24" ng-model="ctrl.panel.dataField[key]" ng-change="ctrl.doMapAndRender()" />
 
             <label class="gf-form-label width-14">Data label</label>

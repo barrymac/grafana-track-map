@@ -5,15 +5,18 @@ import './css/map-panel.css!';
 import './leaflet.css!';
 import { MetricsPanelCtrl } from 'app/plugins/sdk';
 import appEvents from 'app/core/app_events';
+import * as flatten from './flatten';
 
 var timeSrv;
+var date_format = 'DD/MM/YYYY kk:mm:ss';
 
 export class MapCtrl extends MetricsPanelCtrl {
     
     constructor($scope, $injector) {
         super($scope, $injector);
         timeSrv = $injector.get('timeSrv')
-        
+        this.scope = $scope;
+                
         this.myMap = null;
         this.coords = [];
         this.data = null;
@@ -161,11 +164,6 @@ export class MapCtrl extends MetricsPanelCtrl {
             console.log("OK map for "+k+" target: ",target);
         } else {
             // no points
-//            bounds = L.latLngBounds([
-//                [47.043706416, 6.5799864891],
-//                [36.4616233749, 18.5032287476]
-//            ]);
-            //this.myMap = L.map(id);
             console.log("NO map for "+k+" target: ",target);
             return;
         }
@@ -252,7 +250,7 @@ export class MapCtrl extends MetricsPanelCtrl {
                 if (typeof obj[k]=='string' && obj[k].indexOf("http")!=-1) {
                     html += "<a href='"+obj[k]+"' target='_blank'>"+obj[k]+"</a>: ";
                 } else if(moment.isMoment(obj[k])) {
-                    html += obj[k].format('DD/MM/YYYY hh:mm:ss');
+                    html += obj[k].format(date_format);
                 } else {
                     html += obj[k];
                 }
@@ -285,6 +283,24 @@ export class MapCtrl extends MetricsPanelCtrl {
         this.panel.dataField.splice(key, 1);
         this.panel.dataLabel.splice(key, 1);
         this.doMapAndRender();
+    }
+    
+    showJson() {
+        var target = this.panel.targets[0].target;
+        console.log("   >target", target);
+        this.datasource.metricGetJson(target).then(json_sample => {
+            console.log("   >json_sample", json_sample);
+            console.log("showJson");
+            var modalScope = this.scope.$new(true);
+            modalScope.tabs = { index: 0 };
+            modalScope.json_orig = JSON.stringify(json_sample, null, 2);
+            modalScope.json_flat = JSON.stringify(JSON.flatten(json_sample), null, 2)
+            appEvents.emit('show-modal', {
+              src: 'public/plugins/grafana-hist-json-datasource/partials/json.sample.html',
+              //modalClass: 'confirm-modal',
+              scope: modalScope
+            });
+        });
     }
 
     doMapAndRender() {
